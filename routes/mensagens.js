@@ -2,13 +2,25 @@ const express = require('express');
 const router = express.Router();
 const Mensagens = require('../models/Mensagens');
 
-// GET /mensagens
 router.get('/', async (req, res) => {
     try {
         const mensagens = await Mensagens.findAll();
-        res.json(mensagens);
+        res.status(200).json(mensagens);
     } catch (error) {
-        res.status(500).json({ erro: error.message });
+        res.status(500).json({ erro: 'Erro ao buscar mensagens: ' + error.message });
+    }
+});
+
+router.get('/:id', async (req, res) => {
+    const id = parseInt(req.params.id);
+    try {
+        const mensagem = await Mensagens.findByPk(id);
+        if (!mensagem) {
+            return res.status(404).json({ erro: 'Mensagem não encontrada' });
+        }
+        res.status(200).json(mensagem);
+    } catch (error) {
+        res.status(500).json({ erro: 'Erro ao buscar a mensagem: ' + error.message });
     }
 });
 
@@ -17,39 +29,40 @@ router.post('/', async (req, res) => {
         const novaMensagem = await Mensagens.create({
             id: req.body.id,
             conteudo: req.body.conteudo
-        })
+        });
         res.status(201).json(novaMensagem);
     } catch (error) {
-        res.status(400).json({ erro: error.message });
+        res.status(400).json({ erro: 'Erro ao criar a mensagem: ' + error.message });
     }
 });
 
 router.put('/:id', async (req, res) => {
     const mensagemId = parseInt(req.params.id);
-    const newConteudo = req.body;
     try {
-        const newMensagem = await Mensagens.update(newConteudo, {
-            where: {
-                id: mensagemId,
-            },
-        });
-        res.status(201).json(newMensagem);
+        const mensagem = await Mensagens.findByPk(mensagemId);
+        if (!mensagem) {
+            return res.status(404).json({ erro: 'Mensagem não encontrada' });
+        }
+
+        await mensagem.update(req.body);
+        res.status(200).json({ mensagem: 'Mensagem atualizada com sucesso', dados: mensagem });
     } catch (error) {
-        res.status(400).json({ erro: error.message });
+        res.status(400).json({ erro: 'Erro ao atualizar a mensagem: ' + error.message });
     }
 });
 
 router.delete('/:id', async (req, res) => {
     const deleteId = parseInt(req.params.id);
     try {
-        const deleteMensagem = await Mensagens.destroy({
-            where: {
-                id: deleteId,
-            },
-        });
-        res.status(200).json('deletou!');
+        const mensagem = await Mensagens.findByPk(deleteId);
+        if (!mensagem) {
+            return res.status(404).json({ erro: 'Mensagem não encontrada' });
+        }
+
+        await mensagem.destroy();
+        res.status(200).json({ mensagem: 'Mensagem deletada com sucesso' });
     } catch (error) {
-        res.status(400).json({ erro: error.message });
+        res.status(400).json({ erro: 'Erro ao deletar a mensagem: ' + error.message });
     }
 });
 
